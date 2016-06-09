@@ -35,19 +35,12 @@ type alias HeroVertex =
 
 heroVertices : WebGL.Drawable HeroVertex
 heroVertices =
-    let
-        shiftedBy dx dy dz =
-            { hero = Vec2.vec2 0 0
-            , vertexDelta = Vec3.vec3 dx dy dz
-            }
-    in
-        [ ( shiftedBy 0 0 0
-          , shiftedBy 1 1 0
-          , shiftedBy 1 -1 0
-          )
-        ]
-            |> WebGL.Triangle
-            |> Debug.log "triangle"
+    [ ( { hero = Vec2.vec2 0 0, vertexDelta = Vec3.vec3 0 0 0 }
+      , { hero = Vec2.vec2 0 0, vertexDelta = Vec3.vec3 1 1 0 }
+      , { hero = Vec2.vec2 0 0, vertexDelta = Vec3.vec3 1 -1 0 }
+      )
+    ]
+        |> WebGL.Triangle
 
 
 vertexShader : WebGL.Shader HeroVertex {} {}
