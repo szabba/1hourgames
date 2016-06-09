@@ -52,7 +52,7 @@ vertexShader =
         } |]
 
 
-fragmentShader : WebGL.Shader a b {}
+fragmentShader : WebGL.Shader {} {} {}
 fragmentShader =
     [glsl|
         precision mediump float;
