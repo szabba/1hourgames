@@ -42,11 +42,6 @@ view t =
         [ WebGL.render vertexShader fragmentShader mesh {} ]
 
 
-perspective : Float -> Mat4
-perspective t =
-    Mat4.makeScale (Vec3.vec3 1 1 1)
-
-
 
 -- Shaders
 
