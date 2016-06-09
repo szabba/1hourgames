@@ -11,60 +11,20 @@ import WebGL
 main : Program Never
 main =
     App.program
-        { init = init ! []
+        { init = () ! []
         , subscriptions = \_ -> Sub.none
-        , update = \_ _ -> init ! []
+        , update = \_ _ -> () ! []
         , view = view
         }
 
 
-
--- MODEL
-
-
-type alias Model =
-    { hero : Vec2
-    , camera : Camera
-    }
-
-
-type alias Camera =
-    { center : Vec2
-    , phi : Float
-    , alpha : Float
-    , zoom : Float
-    }
-
-
-init : Model
-init =
-    { hero = Vec2.vec2 0 0
-    , camera = { center = Vec2.vec2 0 0, phi = pi / 4, alpha = 0, zoom = 1 }
-    }
-
-
-
--- VIEW
-
-
-view : Model -> Html msg
+view : a -> Html msg
 view model =
-    H.div
-        [ HA.style
-            [ (,) "border-width" "1px"
-            , (,) "border-style" "solid"
-            , (,) "border-color" "#000000"
-            , (,) "width" "400px"
-            , (,) "height" "300px"
-            , (,) "margin" "auto"
-            ]
+    WebGL.toHtml
+        [ HA.width 400
+        , HA.height 300
         ]
-        [ WebGL.toHtml
-            [ HA.width 400
-            , HA.height 300
-            ]
-            [ WebGL.render vertexShader fragmentShader (heroVertices model) model.camera ]
-        ]
+        [ WebGL.render vertexShader fragmentShader heroVertices {} ]
 
 
 type alias HeroVertex =
@@ -73,31 +33,27 @@ type alias HeroVertex =
     }
 
 
-heroVertices : Model -> WebGL.Drawable HeroVertex
-heroVertices { hero } =
+heroVertices : WebGL.Drawable HeroVertex
+heroVertices =
     let
         shiftedBy dx dy dz =
-            { hero = hero
+            { hero = Vec2.vec2 0 0
             , vertexDelta = Vec3.vec3 dx dy dz
             }
     in
-        WebGL.Triangle
-            [ ( shiftedBy 0 0 0
-              , shiftedBy 1 1 0
-              , shiftedBy 1 -1 0
-              )
-            ]
+        [ ( shiftedBy 0 0 0
+          , shiftedBy 1 1 0
+          , shiftedBy 1 -1 0
+          )
+        ]
+            |> WebGL.Triangle
+            |> Debug.log "triangle"
 
 
-vertexShader : WebGL.Shader HeroVertex Camera {}
+vertexShader : WebGL.Shader HeroVertex {} {}
 vertexShader =
     [glsl|
         precision mediump float;
-
-        uniform vec2 center;
-        uniform float phi;
-        uniform float alpha;
-        uniform float zoom;
 
         attribute vec2 hero;
         attribute vec3 vertexDelta;
