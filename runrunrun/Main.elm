@@ -27,33 +27,29 @@ view model =
         [ WebGL.render vertexShader fragmentShader heroVertices {} ]
 
 
-type alias HeroVertex =
-    { hero : Vec2
-    , vertexDelta : Vec3
-    }
+type alias Vertex =
+    { pos : Vec3 }
 
 
-heroVertices : WebGL.Drawable HeroVertex
+heroVertices : WebGL.Drawable Vertex
 heroVertices =
-    [ ( { hero = Vec2.vec2 0 0, vertexDelta = Vec3.vec3 0 0 0 }
-      , { hero = Vec2.vec2 0 0, vertexDelta = Vec3.vec3 1 1 0 }
-      , { hero = Vec2.vec2 0 0, vertexDelta = Vec3.vec3 1 -1 0 }
-      )
-    ]
-        |> WebGL.Triangle
+    WebGL.Triangle
+        [ ( { pos = Vec3.vec3 0 0 0 }
+          , { pos = Vec3.vec3 1 1 0 }
+          , { pos = Vec3.vec3 1 -1 0 }
+          )
+        ]
 
 
-vertexShader : WebGL.Shader HeroVertex {} {}
+vertexShader : WebGL.Shader Vertex {} {}
 vertexShader =
     [glsl|
         precision mediump float;
 
-        attribute vec2 hero;
-        attribute vec3 vertexDelta;
+        attribute vec3 pos;
 
         void main() {
-            gl_Position =
-                vec4(hero, 0, 1) + vec4(vertexDelta, 1);
+            gl_Position = vec4(pos, 1);
         } |]
 
 
