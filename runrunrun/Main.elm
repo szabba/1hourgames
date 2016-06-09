@@ -89,7 +89,7 @@ heroVertices { hero } =
             ]
 
 
-vertexShader : WebGL.Shader { hero : Vec2, vertexDelta : Vec3 } Camera {}
+vertexShader : WebGL.Shader HeroVertex Camera {}
 vertexShader =
     [glsl|
         precision mediump float;
