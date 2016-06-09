@@ -1,14 +1,16 @@
 {
     "version": "1.0.0",
     "summary": "RUN!",
-    "repository": "https://github.com/szabba/1hourgames.git",
+    "repository": "https://github.com/user/repo.git",
     "license": "MIT",
     "source-directories": [
         "."
     ],
     "exposed-modules": [],
     "dependencies": {
+        "elm-community/elm-linear-algebra": "2.0.2 <= v < 3.0.0",
         "elm-community/elm-webgl": "3.0.0 <= v < 4.0.0",
+        "elm-lang/animation-frame": "1.0.0 <= v < 2.0.0",
         "elm-lang/core": "4.0.1 <= v < 5.0.0",
         "elm-lang/html": "1.0.0 <= v < 2.0.0"
     },
