@@ -1,11 +1,11 @@
 module Triangle exposing (..)
 
-import Math.Vector3 exposing (..)
-import Math.Matrix4 exposing (..)
-import WebGL exposing (..)
+import Math.Vector3 as Vec3 exposing (Vec3)
+import Math.Matrix4 as Mat4 exposing (Mat4)
+import WebGL
 import Html exposing (Html)
-import Html.App as Html
-import Html.Attributes exposing (width, height)
+import Html.App as App
+import Html.Attributes as HA
 import AnimationFrame
 
 
@@ -13,22 +13,22 @@ import AnimationFrame
 
 
 type alias Vertex =
-    { position : Vec3, color : Vec3 }
+    { position : Vec3 }
 
 
-mesh : Drawable Vertex
+mesh : WebGL.Drawable Vertex
 mesh =
-    Triangle
-        [ ( Vertex (vec3 0 0 0) (vec3 1 0 0)
-          , Vertex (vec3 1 1 0) (vec3 0 1 0)
-          , Vertex (vec3 1 -1 0) (vec3 0 0 1)
+    WebGL.Triangle
+        [ ( Vertex (Vec3.vec3 0 0 0)
+          , Vertex (Vec3.vec3 1 1 0)
+          , Vertex (Vec3.vec3 1 -1 0)
           )
         ]
 
 
 main : Program Never
 main =
-    Html.program
+    App.program
         { init = ( 0, Cmd.none )
         , view = view
         , subscriptions = (\model -> AnimationFrame.diffs Basics.identity)
@@ -38,46 +38,40 @@ main =
 
 view : Float -> Html msg
 view t =
-    WebGL.toHtml [ width 400, height 400 ]
-        [ render vertexShader fragmentShader mesh { perspective = perspective (t / 1000) } ]
+    WebGL.toHtml [ HA.width 400, HA.height 400 ]
+        [ WebGL.render vertexShader fragmentShader mesh {} ]
 
 
 perspective : Float -> Mat4
 perspective t =
-    mul (makePerspective 45 1 0.01 100)
-        (makeLookAt (vec3 (4 * cos t) 0 (4 * sin t)) (vec3 0 0 0) (vec3 0 1 0))
+    Mat4.makeScale (Vec3.vec3 1 1 1)
 
 
 
 -- Shaders
 
 
-vertexShader : Shader { attr | position : Vec3, color : Vec3 } { unif | perspective : Mat4 } { vcolor : Vec3 }
+vertexShader : WebGL.Shader { attr | position : Vec3 } unif {}
 vertexShader =
     [glsl|
 
 attribute vec3 position;
-attribute vec3 color;
-uniform mat4 perspective;
-varying vec3 vcolor;
 
 void main () {
-    gl_Position = perspective * vec4(position, 1.0);
-    vcolor = color;
+    gl_Position = vec4(position, 1.0);
 }
 
 |]
 
 
-fragmentShader : Shader {} u { vcolor : Vec3 }
+fragmentShader : WebGL.Shader {} u {}
 fragmentShader =
     [glsl|
 
 precision mediump float;
-varying vec3 vcolor;
 
 void main () {
-    gl_FragColor = vec4(vcolor, 1.0);
+    gl_FragColor = vec4(0, 0, 1, 1.0);
 }
 
 |]
