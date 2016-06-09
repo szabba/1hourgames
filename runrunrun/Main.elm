@@ -1,6 +1,5 @@
 module Main exposing (main)
 
-import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Html as H exposing (Html)
 import Html.App as App
