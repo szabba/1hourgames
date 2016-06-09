@@ -1,7 +1,6 @@
 module Triangle exposing (..)
 
 import Math.Vector3 as Vec3 exposing (Vec3)
-import Math.Matrix4 as Mat4 exposing (Mat4)
 import WebGL
 import Html exposing (Html)
 import Html.App as App
@@ -36,8 +35,8 @@ main =
         }
 
 
-view : Float -> Html msg
-view t =
+view : a -> Html msg
+view _ =
     WebGL.toHtml [ HA.width 400, HA.height 400 ]
         [ WebGL.render vertexShader fragmentShader mesh {} ]
 

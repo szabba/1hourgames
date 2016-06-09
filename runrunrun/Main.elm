@@ -5,13 +5,14 @@ import Html as H exposing (Html)
 import Html.App as App
 import Html.Attributes as HA
 import WebGL
+import AnimationFrame
 
 
 main : Program Never
 main =
     App.program
         { init = () ! []
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = \_ -> AnimationFrame.diffs identity
         , update = \_ _ -> () ! []
         , view = view
         }
@@ -48,7 +49,7 @@ vertexShader =
         attribute vec3 pos;
 
         void main() {
-            gl_Position = vec4(pos, 1);
+            gl_Position = vec4(0.5 * pos, 1);
         } |]
 
 
