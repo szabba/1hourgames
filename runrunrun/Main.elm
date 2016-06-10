@@ -1,6 +1,6 @@
 module Main exposing (main)
 
-import Math.Vector3 as Vec3 exposing (Vec3)
+import Basics.Extra as Basics
 import Html as H exposing (Html, Attribute)
 import Html.App as App
 import Html.Attributes as HA
@@ -11,6 +11,7 @@ import Time exposing (Time)
 import WebGL
 import Window
 import AnimationFrame
+import Math.Vector3 as Vec3 exposing (Vec3)
 
 
 main : Program Never
@@ -49,7 +50,7 @@ init =
       , hero = hero
       }
     , Window.size
-        |> Task.perform (\_ -> Debug.crash "never") Resize
+        |> Task.perform Basics.never Resize
     )
 
 
@@ -57,8 +58,8 @@ hero : WebGL.Drawable Vertex
 hero =
     WebGL.Triangle
         [ ( { pos = Vec3.vec3 0 0 0 }
-          , { pos = Vec3.vec3 1 1 0 }
-          , { pos = Vec3.vec3 1 -1 0 }
+          , { pos = Vec3.vec3 0.5 1 0 }
+          , { pos = Vec3.vec3 -0.5 1 0 }
           )
         ]
 
@@ -99,8 +100,7 @@ update msg model =
                 newCamera =
                     { camera
                         | zoom =
-                            camera.zoom
-                                + (Debug.log "zoom delta" delta / 100)
+                            (camera.zoom + delta / 100)
                                 |> clamp 0.1 1
                     }
 
@@ -125,20 +125,39 @@ view { size, hero, camera } =
         , HA.style [ (,) "display" "block" ]
         , onWheel Zoom
         ]
-        [ WebGL.render vertexShader fragmentShader hero camera ]
+        [ { zoom = camera.zoom * 100
+          , width = toFloat size.width
+          , height = toFloat size.height
+          }
+            |> WebGL.render vertexShader fragmentShader hero
+        ]
 
 
-vertexShader : WebGL.Shader Vertex { u | zoom : Float } {}
+vertexShader : WebGL.Shader Vertex { u | zoom : Float, width : Float, height : Float } {}
 vertexShader =
     [glsl|
         precision mediump float;
 
         attribute vec3 pos;
 
+        uniform float width;
+        uniform float height;
         uniform float zoom;
 
         void main() {
-            gl_Position = vec4(zoom * pos, 1);
+            mat4 applyZoom =
+                mat4(
+                    zoom, 0, 0, 0,
+                    0, zoom, 0, 0,
+                    0, 0, zoom, 0,
+                    0, 0, 0, 1);
+            mat4 handleRatio =
+                mat4(
+                    1.0 / width, 0, 0, 0,
+                    0, 1.0 / height, 0, 0,
+                    0, 0, 1, 0,
+                    0, 0, 0, 1);
+            gl_Position = handleRatio * applyZoom * vec4(pos, 1);
         } |]
 
 
