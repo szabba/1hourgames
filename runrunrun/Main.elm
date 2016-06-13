@@ -106,7 +106,7 @@ subscriptions _ =
 type Msg
     = Resize Window.Size
     | Animate Time
-    | Scroll Float
+    | Zoom Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -115,7 +115,7 @@ update msg ({ camera } as model) =
         Resize newSize ->
             { model | size = newSize } ! []
 
-        Scroll delta ->
+        Zoom delta ->
             camera
                 |> (\camera -> { camera | distance = camera.distance + 10 * delta |> clamp 0 150 })
                 |> (\newCamera -> { model | camera = newCamera } ! [])
@@ -147,7 +147,7 @@ view ({ size, triangles, camera } as model) =
             [ HA.width size.width
             , HA.height size.height
             , HA.style [ (,) "display" "block" ]
-            , onWheel (Scroll << \d -> d / 10)
+            , onWheel (Zoom << (*) 0.1)
             ]
             [ WebGL.render vertexShader fragmentShader triangles uniforms
             ]
