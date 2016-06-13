@@ -31,7 +31,7 @@ main =
 type alias Model =
     { size : Window.Size
     , camera : Camera
-    , hero : WebGL.Drawable Vertex
+    , triangles : WebGL.Drawable Vertex
     }
 
 
@@ -40,41 +40,39 @@ type alias Vertex =
 
 
 type alias Camera =
-    { zoom : Float
+    { frustrum : Float
+    , distance : Float
+    , alpha : Float
+    , phi : Float
     }
 
 
 init : ( Model, Cmd Msg )
 init =
     ( { size = Window.Size 0 0
-      , camera = { zoom = 100 }
-      , hero = hero
+      , camera =
+            { frustrum = 10
+            , distance = 100
+            , alpha = 0
+            , phi = 0
+            }
+      , triangles = triangles
       }
     , Window.size
         |> Task.perform Basics.never Resize
     )
 
 
-hero : WebGL.Drawable Vertex
-hero =
+triangles : WebGL.Drawable Vertex
+triangles =
     WebGL.Triangle
-        [ ( { pos = Vec3.vec3 0 0 0, color = blue }
-          , { pos = Vec3.vec3 0.5 0 1, color = blue }
-          , { pos = Vec3.vec3 -0.5 0 1, color = blue }
+        [ ( { pos = Vec3.vec3 -300 -300 0, color = blue }
+          , { pos = Vec3.vec3 -300 300 0, color = blue }
+          , { pos = Vec3.vec3 300 300 0, color = blue }
           )
-        ]
-
-
-ground : WebGL.Drawable Vertex
-ground =
-    WebGL.Triangle
-        [ ( { pos = Vec3.vec3 -3 -3 0, color = yellow }
-          , { pos = Vec3.vec3 -3 3 0, color = yellow }
-          , { pos = Vec3.vec3 3 -3 0, color = yellow }
-          )
-        , ( { pos = Vec3.vec3 3 3 0, color = yellow }
-          , { pos = Vec3.vec3 -3 3 0, color = yellow }
-          , { pos = Vec3.vec3 3 -3 0, color = yellow }
+        , ( { pos = Vec3.vec3 -300 -300 0, color = yellow }
+          , { pos = Vec3.vec3 300 -300 0, color = yellow }
+          , { pos = Vec3.vec3 300 300 0, color = yellow }
           )
         ]
 
@@ -108,32 +106,19 @@ subscriptions _ =
 type Msg
     = Resize Window.Size
     | Animate Time
-    | Zoom Float
+    | Scroll Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update msg ({ camera } as model) =
     case msg of
         Resize newSize ->
             { model | size = newSize } ! []
 
-        Zoom delta ->
-            let
-                { camera } =
-                    model
-
-                newCamera =
-                    { camera
-                        | zoom =
-                            (camera.zoom + delta / 100)
-                                |> clamp 0.1 1
-                    }
-                        |> Debug.log "new zoom"
-
-                newModel =
-                    { model | camera = newCamera }
-            in
-                newModel ! []
+        Scroll delta ->
+            camera
+                |> (\camera -> { camera | distance = camera.distance + 10 * delta |> clamp 0 150 })
+                |> (\newCamera -> { model | camera = newCamera } ! [])
 
         Animate dt ->
             model ! []
@@ -144,28 +129,41 @@ update msg model =
 
 
 view : Model -> Html Msg
-view { size, hero, camera } =
+view ({ size, triangles, camera } as model) =
     let
+        _ =
+            Debug.log "model" model
+
         uniforms =
-            { zoom = camera.zoom
-            , width = toFloat size.width
+            { width = toFloat size.width
             , height = toFloat size.height
-            , phi = pi / 10
-            , alpha = pi / 6
+            , frustrum = camera.frustrum
+            , distance = camera.distance
+            , alpha = camera.alpha
+            , phi = camera.phi
             }
     in
         WebGL.toHtml
             [ HA.width size.width
             , HA.height size.height
             , HA.style [ (,) "display" "block" ]
-            , onWheel Zoom
+            , onWheel (Scroll << \d -> d / 10)
             ]
-            [ WebGL.render vertexShader fragmentShader hero uniforms
-            , WebGL.render vertexShader fragmentShader ground uniforms
+            [ WebGL.render vertexShader fragmentShader triangles uniforms
             ]
 
 
-vertexShader : WebGL.Shader Vertex { u | zoom : Float, width : Float, height : Float, phi : Float, alpha : Float } { vcolor : Vec3 }
+vertexShader :
+    WebGL.Shader Vertex
+        { u
+            | width : Float
+            , height : Float
+            , frustrum : Float
+            , distance : Float
+            , alpha : Float
+            , phi : Float
+        }
+        { vcolor : Vec3 }
 vertexShader =
     [glsl|
         precision highp float;
@@ -173,58 +171,36 @@ vertexShader =
         attribute vec3 pos;
         attribute vec3 color;
 
-        uniform float zoom;
         uniform float width;
         uniform float height;
+        uniform float frustrum;
+        uniform float distance;
         uniform float alpha;
         uniform float phi;
 
         varying vec3 vcolor;
 
+        const float TURN = 3.1415 * 2.0;
+
         void main() {
+            mat4 project =
+                mat4(
+                    2.0 * frustrum / width, 0, 0, 0,
+                    0, 2.0 * frustrum / height, 0, 0,
+                    0, 0, -1, -1,
+                    0, 0, -frustrum, frustrum);
 
-            mat4 permuteAxes =
+            mat4 moveAway =
                 mat4(
                     1, 0, 0, 0,
-                    0, 0, 1, 0,
-                    0, 1, 0, 0,
-                    0, 0, 0, 1);
-
-            mat4 handleRatio =
-                mat4(
-                    height / width, 0, 0, 0,
                     0, 1, 0, 0,
                     0, 0, 1, 0,
-                    0, 0, 0, 1);
-
-            mat4 applyZoom =
-                mat4(
-                    zoom, 0, 0, 0,
-                    0, zoom, 0, 0,
-                    0, 0, zoom, 0,
-                    0, 0, 0, 1);
-
-            mat4 rotX =
-                mat4(
-                    1, 0, 0, 0,
-                    0, cos(phi), sin(phi), 0,
-                    0, -sin(phi), cos(phi), 0,
-                    0, 0, 0, 1);
-
-            mat4 rotZ =
-                mat4(
-                    cos(alpha), -sin(alpha), 0, 0,
-                    sin(alpha), cos(alpha), 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1);
+                    0, 0, -distance, 1);
 
             gl_Position =
-                permuteAxes
-                * handleRatio
-                * applyZoom
-                * rotX
-                * rotZ
-                * vec4(pos, 1);
+                project *
+                moveAway *
+                vec4(pos, 1);
 
             vcolor = color;
         } |]
