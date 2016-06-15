@@ -68,7 +68,12 @@ blue =
 
 
 
--- SUBSCRIPTIONS
+-- UPDATE
+
+
+type Msg
+    = CameraMsg Camera.Msg
+    | Animate Time
 
 
 subscriptions : Model -> Sub Msg
@@ -81,15 +86,6 @@ subscriptions model =
         ]
 
 
-
--- UPDATE
-
-
-type Msg
-    = CameraMsg Camera.Msg
-    | Animate Time
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ camera } as model) =
     case msg of
@@ -98,11 +94,6 @@ update msg ({ camera } as model) =
 
         Animate dt ->
             model ! []
-
-
-updateCam : Model -> Camera.Model -> ( Model, Cmd Msg )
-updateCam model cam =
-    { model | camera = cam } ! []
 
 
 
