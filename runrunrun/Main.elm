@@ -108,8 +108,8 @@ view ({ triangles, camera } as model) =
             , height = toFloat camera.size.height
             , frustrum = camera.frustrum
             , distance = camera.distance
-            , alpha = camera.alpha |> Debug.log "alpha"
-            , phi = camera.phi |> Debug.log "phi"
+            , alpha = camera.alpha
+            , phi = camera.phi
             }
     in
         WebGL.toHtml

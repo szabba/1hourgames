@@ -56,7 +56,6 @@ update msg model =
                 ( { model | lastPosition = newPosition }
                 , if model.isDown then
                     Vec2.sub newPosition model.lastPosition
-                        |> Debug.log "nonzero drag"
                   else
                     zero
                 )
