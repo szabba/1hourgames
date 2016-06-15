@@ -1,17 +1,13 @@
 module Main exposing (main)
 
-import Basics.Extra as Basics
 import Html as H exposing (Html, Attribute)
 import Html.App as App
 import Html.Attributes as HA
-import Html.Events as HE
-import Json.Decode as Json exposing ((:=))
-import Task
 import Time exposing (Time)
 import WebGL
-import Window
 import AnimationFrame
 import Math.Vector3 as Vec3 exposing (Vec3)
+import Camera
 
 
 main : Program Never
@@ -29,8 +25,7 @@ main =
 
 
 type alias Model =
-    { size : Window.Size
-    , camera : Camera
+    { camera : Camera.Model
     , triangles : WebGL.Drawable Vertex
     }
 
@@ -39,27 +34,12 @@ type alias Vertex =
     { pos : Vec3, color : Vec3 }
 
 
-type alias Camera =
-    { frustrum : Float
-    , distance : Float
-    , alpha : Float
-    , phi : Float
-    }
-
-
 init : ( Model, Cmd Msg )
 init =
-    ( { size = Window.Size 0 0
-      , camera =
-            { frustrum = 10
-            , distance = 100
-            , alpha = 0
-            , phi = 0
-            }
+    ( { camera = Camera.init
       , triangles = triangles
       }
-    , Window.size
-        |> Task.perform Basics.never Resize
+    , Camera.initCmd |> Cmd.map CameraMsg
     )
 
 
@@ -92,10 +72,12 @@ blue =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
+subscriptions model =
     Sub.batch
         [ AnimationFrame.diffs Animate
-        , Window.resizes Resize
+        , model.camera
+            |> Camera.subscriptions
+            |> Sub.map CameraMsg
         ]
 
 
@@ -104,24 +86,23 @@ subscriptions _ =
 
 
 type Msg
-    = Resize Window.Size
+    = CameraMsg Camera.Msg
     | Animate Time
-    | Zoom Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg ({ camera } as model) =
     case msg of
-        Resize newSize ->
-            { model | size = newSize } ! []
-
-        Zoom delta ->
-            camera
-                |> (\camera -> { camera | distance = camera.distance + 10 * delta |> clamp 0 150 })
-                |> (\newCamera -> { model | camera = newCamera } ! [])
+        CameraMsg msg ->
+            { model | camera = model.camera |> Camera.update msg } ! []
 
         Animate dt ->
             model ! []
+
+
+updateCam : Model -> Camera.Model -> ( Model, Cmd Msg )
+updateCam model cam =
+    { model | camera = cam } ! []
 
 
 
@@ -129,25 +110,22 @@ update msg ({ camera } as model) =
 
 
 view : Model -> Html Msg
-view ({ size, triangles, camera } as model) =
+view ({ triangles, camera } as model) =
     let
-        _ =
-            Debug.log "model" model
-
         uniforms =
-            { width = toFloat size.width
-            , height = toFloat size.height
+            { width = toFloat camera.size.width
+            , height = toFloat camera.size.height
             , frustrum = camera.frustrum
             , distance = camera.distance
-            , alpha = camera.alpha
-            , phi = camera.phi
+            , alpha = 0
+            , phi = 0
             }
     in
         WebGL.toHtml
-            [ HA.width size.width
-            , HA.height size.height
+            [ HA.width camera.size.width
+            , HA.height camera.size.height
             , HA.style [ (,) "display" "block" ]
-            , onWheel (Zoom << (*) 0.1)
+            , Camera.onZoom CameraMsg
             ]
             [ WebGL.render vertexShader fragmentShader triangles uniforms
             ]
@@ -216,13 +194,3 @@ fragmentShader =
         void main() {
             gl_FragColor = vec4(vcolor, 1);
         } |]
-
-
-
--- EVENTS
-
-
-onWheel : (Float -> msg) -> Attribute msg
-onWheel f =
-    HE.on "wheel"
-        ("deltaY" := Json.float |> Json.map f)
