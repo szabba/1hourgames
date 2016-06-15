@@ -6,23 +6,31 @@ import Html.Events as HE
 import Json.Decode as Json exposing ((:=))
 import Task
 import Window
+import Math.Vector2 as Vec2
+import Drag
 
 
 -- MODEL
 
 
 type alias Model =
-    { size : Window.Size
+    { drag : Drag.Model
+    , size : Window.Size
     , frustrum : Float
     , distance : Float
+    , alpha : Float
+    , phi : Float
     }
 
 
 init : Model
 init =
-    { size = Window.Size 0 0
-    , frustrum = 10
+    { drag = Drag.init
+    , size = Window.Size 0 0
+    , frustrum = 1
     , distance = 100
+    , alpha = 0
+    , phi = 0
     }
 
 
@@ -37,23 +45,41 @@ initCmd =
 
 
 type Msg
-    = Resize Window.Size
+    = DragMsg Drag.Msg
+    | Resize Window.Size
     | Zoom Float
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Window.resizes Resize
+subscriptions model =
+    [ Window.resizes Resize
+    , model.drag
+        |> Drag.subscriptions
+        |> Sub.map DragMsg
+    ]
+        |> Sub.batch
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
+        DragMsg msg ->
+            let
+                ( newDrag, delta ) =
+                    model.drag
+                        |> Drag.update msg
+            in
+                { model
+                    | drag = newDrag
+                    , alpha = model.alpha + (Vec2.getX delta) * pi / 180
+                    , phi = model.phi + (Vec2.getY delta) * pi / 180 |> clamp 0 (pi / 2)
+                }
+
         Resize newSize ->
             { model | size = newSize }
 
         Zoom delta ->
-            { model | distance = model.distance + 10 * delta |> clamp 0 150 }
+            { model | distance = model.distance + 10 * delta }
 
 
 
