@@ -16,6 +16,7 @@ type alias Model =
     { drag : Drag.Model
     , size : Window.Size
     , frustrum : Float
+    , alpha : Float
     }
 
 
@@ -24,6 +25,7 @@ init =
     { drag = Drag.init
     , size = Window.Size 0 0
     , frustrum = 1
+    , alpha = pi / 2
     }
 
 
@@ -63,7 +65,11 @@ update msg model =
             { model | size = newSize }
 
         Zoom delta ->
-            model
+            { model
+                | alpha =
+                    (model.alpha + delta / 2000 * pi / 180)
+                        |> clamp (pi / 2 * 0.999) (pi / 2 * 0.9995)
+            }
 
 
 
