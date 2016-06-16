@@ -107,9 +107,6 @@ view ({ triangles, camera } as model) =
             { width = toFloat camera.size.width
             , height = toFloat camera.size.height
             , frustrum = camera.frustrum
-            , distance = camera.distance
-            , alpha = camera.alpha
-            , phi = camera.phi
             }
     in
         WebGL.toHtml
@@ -128,9 +125,6 @@ vertexShader :
             | width : Float
             , height : Float
             , frustrum : Float
-            , distance : Float
-            , alpha : Float
-            , phi : Float
         }
         { vcolor : Vec3 }
 vertexShader =
@@ -143,9 +137,6 @@ vertexShader =
         uniform float width;
         uniform float height;
         uniform float frustrum;
-        uniform float distance;
-        uniform float alpha;
-        uniform float phi;
 
         varying vec3 vcolor;
 
@@ -159,40 +150,8 @@ vertexShader =
                     0, 0, -1, -1,
                     0, 0, -frustrum, frustrum);
 
-            mat4 moveAway =
-                mat4(
-                    1, 0, 0, 0,
-                    0, 1, 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, -distance, 1);
-
-            mat4 rotX =
-                mat4(
-                    1, 0, 0, 0,
-                    0, cos(phi), sin(phi), 0,
-                    0, -sin(phi), cos(phi), 0,
-                    0, 0, 0, 1 );
-
-            mat4 rotZ =
-                mat4(
-                    cos(alpha), sin(alpha), 0, 0,
-                    -sin(alpha), cos(alpha), 0, 0,
-                    0, 0, 1, 0,
-                    0, 0, 0, 1);
-
-            mat4 permuteAxes =
-                mat4(
-                    1, 0, 0, 0,
-                    0, 0, -1, 0,
-                    0, 1, 0, 0,
-                    0, 0, 0, 1);
-
             gl_Position =
                 project *
-                moveAway *
-                rotX *
-                rotZ *
-                permuteAxes *
                 vec4(pos, 1);
 
             vcolor = color;
